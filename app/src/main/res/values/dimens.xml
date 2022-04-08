@@ -10,4 +10,5 @@
     <dimen name="card_img_cover_height">160dp</dimen>
     <dimen name="common_padding_middle">24dp</dimen>
     <dimen name="card_height">56dp</dimen>
+    <dimen name="phot_size_thumb">88dp</dimen>
 </resources>

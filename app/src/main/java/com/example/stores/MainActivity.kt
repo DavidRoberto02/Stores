@@ -18,17 +18,20 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         mbinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(mbinding.root)
 
-        mbinding.btnSave.setOnClickListener {
-            val store = StoreEntity(name = mbinding.etName.text.toString().trim())
 
-            Thread {
-                StoreApplication.database.storeDao().addStore(store)
-            }.start()
-
-            mAdapter.add(store)
-        }
+        mbinding.fab.setOnClickListener { launchEditFragment() }
 
         setupRecyclerView()
+    }
+
+    private fun launchEditFragment() {
+        val fragment = EditStoreFragment()
+        val fragmentManager = supportFragmentManager
+        val fragmentTransaction = fragmentManager.beginTransaction()
+        fragmentTransaction.add(R.id.containerMain, fragment)
+        fragmentTransaction.commit()
+
+        mbinding.fab.hide()
     }
 
     private fun setupRecyclerView() {
