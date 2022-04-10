@@ -1,10 +1,18 @@
 package com.example.stores
 
+import android.content.Context
 import android.os.Bundle
 import android.view.*
+import android.view.inputmethod.InputMethodManager
+import android.widget.Toast
+import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.stores.databinding.FragmentEditStoreBinding
 import com.google.android.material.snackbar.Snackbar
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.uiThread
 
 
 class EditStoreFragment : Fragment() {
@@ -12,8 +20,10 @@ class EditStoreFragment : Fragment() {
     private lateinit var mBinding: FragmentEditStoreBinding
     private var mActivity: MainActivity? = null
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         mBinding = FragmentEditStoreBinding.inflate(inflater, container, false)
 
         return mBinding.root
@@ -26,6 +36,14 @@ class EditStoreFragment : Fragment() {
         mActivity?.supportActionBar?.setDisplayHomeAsUpEnabled(true)
         mActivity?.supportActionBar?.title = getString(R.string.edit_store_title_add)
         setHasOptionsMenu(true)
+
+        mBinding.etPhotoUrl.addTextChangedListener {
+            Glide.with(this)
+                .load(mBinding.etPhotoUrl.text.toString())
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .centerCrop()
+                .into(mBinding.imgPhoto)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -34,20 +52,50 @@ class EditStoreFragment : Fragment() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when(item.itemId){
+        return when (item.itemId) {
             android.R.id.home -> {
                 mActivity?.onBackPressed()
                 true
             }
             R.id.action_save -> {
-                Snackbar.make(mBinding.root, getString(R.string.edit_store_message_save_success),
-                    Snackbar.LENGTH_SHORT)
-                    .show()
+                val store = StoreEntity(
+                    name = mBinding.etName.text.toString().trim(),
+                    phone = mBinding.etPhone.toString().trim(),
+                    website = mBinding.etWebsite.text.toString().trim(),
+                    photoUrl = mBinding.etPhotoUrl.text.toString().trim()
+                )
+
+                doAsync {
+                    store.id = StoreApplication.database.storeDao().addStore(store)
+                    uiThread {
+                        mActivity?.addStore(store)
+                        hideKeyboard()
+
+                        Toast.makeText(
+                            mActivity,
+                            R.string.edit_store_message_save_success,
+                            Toast.LENGTH_LONG
+                        )
+                            .show()
+
+                        mActivity?.onBackPressed()
+                    }
+                }
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
-        //return super.onOptionsItemSelected(item)
+    }
+
+    private fun hideKeyboard() {
+        val imn = mActivity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imn.hideSoftInputFromWindow(requireView().windowToken, 0)
+
+    }
+
+    override fun onDestroyView() {
+        hideKeyboard()
+        super.onDestroyView()
     }
 
     override fun onDestroy() {
