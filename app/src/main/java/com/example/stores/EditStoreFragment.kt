@@ -2,6 +2,7 @@ package com.example.stores
 
 import android.content.Context
 import android.os.Bundle
+import android.text.Editable
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
@@ -19,6 +20,8 @@ class EditStoreFragment : Fragment() {
 
     private lateinit var mBinding: FragmentEditStoreBinding
     private var mActivity: MainActivity? = null
+    private var mIsEditMode: Boolean = false
+    private var mStoreEntity: StoreEntity? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,6 +35,14 @@ class EditStoreFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val id = arguments?.getLong(getString(R.string.arg_id), 0)
+        if (id != null && id != 0L) {
+            mIsEditMode = true
+            getStore(id)
+        } else {
+            mIsEditMode = false
+            mStoreEntity = StoreEntity(name = "", phone = "", photoUrl = "")
+        }
         mActivity = activity as? MainActivity
         mActivity?.supportActionBar?.setDisplayHomeAsUpEnabled(true)
         mActivity?.supportActionBar?.title = getString(R.string.edit_store_title_add)
@@ -43,8 +54,29 @@ class EditStoreFragment : Fragment() {
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .centerCrop()
                 .into(mBinding.imgPhoto)
+
         }
     }
+
+    private fun getStore(id: Long) {
+        doAsync {
+            mStoreEntity = StoreApplication.database.storeDao().getStoreById(id)
+            uiThread {
+                if (mStoreEntity != null) setUiStore(mStoreEntity!!)
+            }
+        }
+    }
+
+    private fun setUiStore(storeEntity: StoreEntity) {
+        with(mBinding) {
+            etName.text = storeEntity.name.editable()
+            etPhone.text = storeEntity.phone.editable()
+            etWebsite.text = storeEntity.website.editable()
+            etPhotoUrl.text = storeEntity.photoUrl.editable()
+        }
+    }
+
+    private fun String.editable(): Editable = Editable.Factory.getInstance().newEditable(this)
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.menu_save, menu)
@@ -58,29 +90,51 @@ class EditStoreFragment : Fragment() {
                 true
             }
             R.id.action_save -> {
-                val store = StoreEntity(
-                    name = mBinding.etName.text.toString().trim(),
-                    phone = mBinding.etPhone.toString().trim(),
-                    website = mBinding.etWebsite.text.toString().trim(),
-                    photoUrl = mBinding.etPhotoUrl.text.toString().trim()
-                )
+                /* val store = StoreEntity(
+                     name = mBinding.etName.text.toString().trim(),
+                     phone = mBinding.etPhone.toString().trim(),
+                     website = mBinding.etWebsite.text.toString().trim(),
+                     photoUrl = mBinding.etPhotoUrl.text.toString().trim()
+                 )*/
+                if (mStoreEntity != null) {
+                    with(mStoreEntity!!) {
+                        name = mBinding.etName.text.toString().trim()
+                        phone = mBinding.etPhone.toString().trim()
+                        website = mBinding.etWebsite.text.toString().trim()
+                        photoUrl = mBinding.etPhotoUrl.text.toString().trim()
+                    }
+                    doAsync {
+                        if (mIsEditMode) StoreApplication.database.storeDao()
+                            .updateStore(mStoreEntity!!)
+                        else mStoreEntity!!.id =
+                            StoreApplication.database.storeDao().addStore(mStoreEntity!!)
+                        uiThread {
+                            hideKeyboard()
+                            if (mIsEditMode) {
+                                mActivity?.updateStore(mStoreEntity!!)
 
-                doAsync {
-                    store.id = StoreApplication.database.storeDao().addStore(store)
-                    uiThread {
-                        mActivity?.addStore(store)
-                        hideKeyboard()
+                                Snackbar.make(
+                                    mBinding.root,
+                                    R.string.edit_store_message_update_success,
+                                    Snackbar.LENGTH_SHORT
+                                ).show()
+                            } else {
 
-                        Toast.makeText(
-                            mActivity,
-                            R.string.edit_store_message_save_success,
-                            Toast.LENGTH_LONG
-                        )
-                            .show()
+                                mActivity?.addStore(mStoreEntity!!)
 
-                        mActivity?.onBackPressed()
+                                Toast.makeText(
+                                    mActivity,
+                                    R.string.edit_store_message_save_success,
+                                    Toast.LENGTH_LONG
+                                )
+                                    .show()
+
+                                mActivity?.onBackPressed()
+                            }
+                        }
                     }
                 }
+
                 true
             }
             else -> super.onOptionsItemSelected(item)
