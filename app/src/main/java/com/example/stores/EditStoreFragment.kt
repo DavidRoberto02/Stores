@@ -90,16 +90,10 @@ class EditStoreFragment : Fragment() {
                 true
             }
             R.id.action_save -> {
-                /* val store = StoreEntity(
-                     name = mBinding.etName.text.toString().trim(),
-                     phone = mBinding.etPhone.toString().trim(),
-                     website = mBinding.etWebsite.text.toString().trim(),
-                     photoUrl = mBinding.etPhotoUrl.text.toString().trim()
-                 )*/
                 if (mStoreEntity != null) {
                     with(mStoreEntity!!) {
                         name = mBinding.etName.text.toString().trim()
-                        phone = mBinding.etPhone.toString().trim()
+                        phone = mBinding.etPhone.text.toString().trim()
                         website = mBinding.etWebsite.text.toString().trim()
                         photoUrl = mBinding.etPhotoUrl.text.toString().trim()
                     }

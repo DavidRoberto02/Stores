@@ -52,7 +52,7 @@ class StoreAdapter(
     fun add(storeEntity: StoreEntity) {
         if (!stores.contains(storeEntity)) {
             stores.add(storeEntity)
-            notifyItemInserted(stores.size-1)
+            notifyItemInserted(stores.size - 1)
         }
     }
 
