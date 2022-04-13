@@ -1,9 +1,14 @@
 package com.example.stores
 
+import android.content.DialogInterface
+import android.content.Intent
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.stores.databinding.ActivityMainBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.uiThread
 
@@ -80,12 +85,66 @@ class MainActivity : AppCompatActivity(), OnClickListener, MainAux {
     }
 
     override fun onDeleteStore(storeEntity: StoreEntity) {
-        doAsync {
-            StoreApplication.database.storeDao().deleteStore(storeEntity)
-            uiThread {
-                mAdapter.delete(storeEntity)
+        val items = arrayOf("Eliminar", "Llamar", "Ir al sitio web")
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_options_title)
+            .setItems(items) { _, i ->
+                when (i) {
+                    0 -> confirmDelete(storeEntity)
+
+                    1 -> dial(storeEntity.phone)
+
+                    2 -> goToWebSite(storeEntity.website)
+                }
             }
+            .show()
+
+    }
+
+
+    private fun dial(phone: String) {
+        val callIntent = Intent().apply {
+            action = Intent.ACTION_DIAL
+            data = Uri.parse("tel:$phone")
         }
+
+        if (callIntent.resolveActivity(packageManager) != null)
+        startActivity(callIntent)
+        else
+            Toast.makeText(this, R.string.main_error_no_resolved, Toast.LENGTH_LONG).show()
+    }
+
+    private fun goToWebSite(website: String) {
+
+        if (website.isEmpty()) {
+            Toast.makeText(this, R.string.main_error_no_website, Toast.LENGTH_LONG).show()
+        } else {
+            val websiteIntent = Intent().apply {
+                action = Intent.ACTION_VIEW
+                data = Uri.parse(website)
+            }
+
+            if (websiteIntent.resolveActivity(packageManager) != null)
+                startActivity(websiteIntent)
+            else
+                Toast.makeText(this, R.string.main_error_no_resolved, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun confirmDelete(storeEntity: StoreEntity) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dialog_delete_title)
+            .setPositiveButton(R.string.dialog_delete_confirm) { _, _ ->
+                doAsync {
+                    StoreApplication.database.storeDao().deleteStore(storeEntity)
+                    uiThread {
+                        mAdapter.delete(storeEntity)
+                    }
+                }
+            }
+            .setNegativeButton(R.string.dialog_delete_cancel, null)
+            .show()
     }
 
     /*
