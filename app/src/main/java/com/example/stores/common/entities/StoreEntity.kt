@@ -1,4 +1,4 @@
-package com.example.stores
+package com.example.stores.common.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -15,6 +15,8 @@ data class StoreEntity(
 
 
 ) {
+
+    constructor() : this(name = "", phone = "", photoUrl = "")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
